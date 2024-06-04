@@ -7,7 +7,7 @@ include "math.s"
 
 segment readable writeable
 ; constants
-IMAGE_WIDTH = 1920
+IMAGE_WIDTH = 1080
 IMAGE_HEIGHT = 1080
 
 ; variables

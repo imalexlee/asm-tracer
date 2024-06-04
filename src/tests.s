@@ -22,6 +22,8 @@ entry $
 	pxor xmm1, xmm1
 	movups	xmm0, [u]
 	movups	xmm1, [v]
-	call	cross_prod
+
+	vec_muls
+
 	int3
   	syscall 60, 0		; exit

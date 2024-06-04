@@ -23,7 +23,7 @@ vec_len:
 ;	xmm0: vector to convert
 ; outputs:
 ;	xmm0: converted vector
-unit_vec:
+vec_norm:
 	pxor	xmm1, xmm1
 	movaps	xmm1, xmm0
 	call	vec_len
@@ -50,3 +50,14 @@ cross_prod:
 	subps	xmm3, xmm4		; u1v2 - u2v1, u2v0 - u0v2, u0v1 - u1v0
 	movaps	xmm0, xmm3
 	ret
+
+; multiplies all items in a vec holding 3 single precision floats by a scalar float
+; inputs:
+;	xmm0: vec to multiply
+;	xmm1: scalar float to multiply by in lowest dword
+; outputs:
+;	xmm0: vector holding multiplied data
+macro vec_muls  {
+	shufps	xmm1, xmm1, 11000000b	; copy value to all positions except last
+	mulps	xmm0, xmm1
+}
