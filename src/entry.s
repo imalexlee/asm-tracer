@@ -1,25 +1,14 @@
-; fasm demonstration of writing 64-bit ELF executable
-; (thanks to Frantiek Gábri)
 
-; syscall numbers: /usr/src/linux/include/asm-x86_64/unistd.h
-; parameters order:
-; eax   ; syscall_number
-; rdi   ; 1st param
-; rsi   ; 2nd param
-; rdx   ; 3rd param
-; r10   ; 4th param
-; r8    ; 5th param
-; r9    ; 6th param
-; syscall
 
 format ELF64 executable 3
 
 include "macros.inc"
+include "math.s"
 
 segment readable writeable
 ; constants
-IMAGE_WIDTH = 1080
-IMAGE_HEIGHT = 1920
+IMAGE_WIDTH = 1920
+IMAGE_HEIGHT = 1080
 
 ; variables
 color_scale	dd 255.999
@@ -200,20 +189,20 @@ write_header:
 ;	rdx: length of string (with null terminator)	
 uitoa:
 	add 	rdi, 9
-	mov 	byte [rdi], 0	; null terminate end of string
-	mov 	rax, rsi	; move number to rax for dividing
-	mov	rsi, 10		; make rsi now store the divisor
+	mov 	byte [rdi], 0		; null terminate end of string
+	mov 	rax, rsi		; move number to rax for dividing
+	mov	rsi, 10			; make rsi now store the divisor
 	xor 	rcx,rcx
-	add	rcx, 1		; count the terminator
+	add	rcx, 1			; count the terminator
 .uitoa_loop:	
-	inc	rcx		; increment length counter
-	xor	edx, edx	; clear remainder since div uses edx:eax combined 64 bit reg
-	div	rsi		; get remainder into edx
-	add	edx, '0'	; add 48 ('0') to convert remainder to ascii
-	dec	rdi		; move string buffer pointer back a byte
-	mov	byte [rdi], dl	; set byte in string
-	test	eax, eax	; see if rax is 0 now
+	inc	rcx			; increment length counter
+	xor	edx, edx		; clear remainder since div uses edx:eax combined 64 bit reg
+	div	rsi			; get remainder into edx
+	add	edx, '0'		; add 48 ('0') to convert remainder to ascii
+	dec	rdi			; move string buffer pointer back a byte
+	mov	byte [rdi], dl		; set byte in string
+	test	eax, eax		; see if rax is 0 now
 	jnz	.uitoa_loop
-	mov 	rax, rdi	; move both returns into correct calling convention
+	mov 	rax, rdi		; move both returns into correct calling convention
 	mov	rdx, rcx
 	ret
