@@ -1,7 +1,9 @@
 format ELF64 executable 3
 
 include "macros.inc"
+include "system.s"
 include "math.s"
+inlclude "math.inc"
 
 segment readable writeable
 
@@ -25,5 +27,4 @@ entry $
 
 	vec_muls
 
-	int3
   	syscall 60, 0		; exit
