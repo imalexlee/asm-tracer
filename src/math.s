@@ -1,10 +1,5 @@
-; types
-struc vec3 x, y, z {
-	.x dd x
-	.y dd y
-	.z dd z
-	.w dd 0
-}
+; Generic primitive math functions
+; ---------------------------------------------------------------------------------------
 
 ; finds the length of a given vector of 3 single precision floats
 ; inputs:

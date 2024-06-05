@@ -1,4 +1,4 @@
-; MACROS
+; FUNCTION MACROS
 ; ---------------------------------------------------------------------------------------
 
 ; multiplies all items in a vec holding 3 single precision floats by a scalar float

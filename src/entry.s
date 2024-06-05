@@ -66,29 +66,3 @@ entry $
 
 
 			
-; converts unsigned int to ascii string
-; inputs:
-;	rdi: pointer to 10 byte buffer
-;	rsi: number to convert
-; outputs:
-;	rax: pointer to start of null terminated string
-;	rdx: length of string (with null terminator)	
-uitoa:
-	add 	rdi, 9
-	mov 	byte [rdi], 0		; null terminate end of string
-	mov 	rax, rsi		; move number to rax for dividing
-	mov	rsi, 10			; make rsi now store the divisor
-	xor 	rcx,rcx
-	add	rcx, 1			; count the terminator
-.uitoa_loop:	
-	inc	rcx			; increment length counter
-	xor	edx, edx		; clear remainder since div uses edx:eax combined 64 bit reg
-	div	rsi			; get remainder into edx
-	add	edx, '0'		; add 48 ('0') to convert remainder to ascii
-	dec	rdi			; move string buffer pointer back a byte
-	mov	byte [rdi], dl		; set byte in string
-	test	eax, eax		; see if rax is 0 now
-	jnz	.uitoa_loop
-	mov 	rax, rdi		; move both returns into correct calling convention
-	mov	rdx, rcx
-	ret
