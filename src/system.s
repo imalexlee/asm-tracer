@@ -28,7 +28,7 @@ segment readable executable
 ;	none
 write_color:
 	movss	xmm1, [color_scale]	
-	vec_muls			; multiply all values by 255.999
+	vec_muls 	xmm0, xmm1	; multiply all values by 255.999
 	cvtps2dq 	xmm0, xmm0	
 	call	write_img_line
 	ret
