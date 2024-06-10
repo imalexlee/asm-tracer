@@ -8,7 +8,6 @@ segment readable writeable
 
 ; constants in memory
 color_scale	dd 255.999
-image_file 	db "image.ppm", 0
 
 ; variables
 intstr_buf	rb 10

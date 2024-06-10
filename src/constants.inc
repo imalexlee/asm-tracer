@@ -1,6 +1,6 @@
 segment readable writeable
 
-IMAGE_WIDTH = 1080
+IMAGE_WIDTH = 1920
 IMAGE_HEIGHT = 1080
 SYS_WRITE = 1
 SYS_OPEN = 2
