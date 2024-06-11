@@ -1,4 +1,5 @@
-; Render system
+; System interfacing functionality
+; ---------------------------------------------------------------------------------------
 
 include "math.inc"
 include "constants.inc"
@@ -6,18 +7,13 @@ include "system.inc"
 
 segment readable writeable
 
-; constants in memory
 color_scale	dd 255.999
 
-; variables
 intstr_buf	rb 10
 header_buf	rb 20
 line_buf	rb 30
 
 segment readable executable
-
-; FUNCTIONS
-; ---------------------------------------------------------------------------------------
 
 ; writes an RGB value in a 3 value single precision vector
 ; inputs:

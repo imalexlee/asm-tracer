@@ -6,7 +6,6 @@ include "math.s"
 include "geometry.s"
 
 include "constants.inc"
-include "macros.inc"
 include "math.inc"
 include "geometry.inc"
 
@@ -24,6 +23,10 @@ view_top_left	Vec3 0.0, 0.0, 0.0	; location of top left of viewport
 pix00_pos	Vec3 0.0, 0.0, 0.0	; center point of first pixel
 sky_blue	Vec3 0.5, 0.7, 1.0
 white		Vec3 1.0, 1.0, 1.0
+red		Vec3 1.0, 0.0, 0.0
+
+sphere_origin	Vec3 0.0, 0.0, -1.0
+sphere		Sphere sphere_origin, 0.5
 
 aspect_ratio	rd 1
 viewport_w	rd 1			; viewport width

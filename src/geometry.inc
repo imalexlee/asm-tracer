@@ -6,7 +6,13 @@ struc Vec3 x, y, z {
 }
 
 ; takes 2 Vec3 
-struc Ray orig, dir {
-	.orig = orig
-	.dir = dir
+struc Ray origin, direction {
+	.orig = origin
+	.dir = direction
+}
+
+; takes a Vec3 and float
+struc Sphere origin, radius {
+	.orig = origin
+	.rad dd radius
 }
