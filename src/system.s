@@ -28,7 +28,7 @@ write_color:
 	call	write_img_line
 	ret
 
-; writes a line for the image -> "<r> <g> <b> \n"
+; writes a line for the image -> "<r> <g> <b>\n"
 ; inputs:
 ; 	rdi: file descriptor
 ; 	xmm0: color

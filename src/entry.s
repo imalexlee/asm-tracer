@@ -42,7 +42,7 @@ entry $
 	mov	dword [rbp - 4], 0	; i
 	mov	dword [rbp - 8], 0	; j
 	call	init_data
-	syscall	2, image_file, 102o, 700o	; open with read/write permissions
+	syscall	SYS_OPEN, image_file, 102o, 700o	; open with read/write permissions
 	mov	[rbp - 12], eax		; save file descriptor
 	mov	edi, eax
 	call write_ppm_header
@@ -76,7 +76,6 @@ entry $
 	cmp	dword [rbp - 4], IMAGE_HEIGHT	; if i < image height 
 	jl	.i_loop
 
-	
 	leave
   	syscall 60, 0		; exit
 
