@@ -79,33 +79,54 @@ ray_color:
 ;	xmm1: ray direction
 ;	xmm2: sphere center
 ;	xmm3: sphere radius
+;	xmm4: t_min
+;	xmm5: t_max
 ; outputs: 
 ;	xmm0: -1 or time t where ray intersects sphere
 hit_sphere:
+	
+	mov	eax, 0.0
+	pinsrd	xmm4, eax, 0		; hardcode t_min
+	mov	eax, 10000000.0
+	pinsrd	xmm5, eax, 0		; hardcode t_max
 	subps	xmm2, xmm0		; oc. origin -> center
 	; a = dot(r.direction(), r.direction()); = 1.0
 	vdpps	xmm0, xmm1, xmm1, 01110001b
 	; b = dot(r.direction(), oc);
-	vdpps	xmm4, xmm1, xmm2, 01110001b
+	vdpps	xmm6, xmm1, xmm2, 01110001b
 	; c = dot(oc, oc) - radius*radius;
-	vdpps	xmm6, xmm2, xmm2, 01110001b
+	vdpps	xmm7, xmm2, xmm2, 01110001b
 	mulss	xmm3, xmm3
-	subss	xmm6, xmm3		; c
+	subss	xmm7, xmm3		; c
 	; discriminant = b*b - a*c;
-	vmulps	xmm5, xmm4, xmm4
-	vmulss	xmm2, xmm6, xmm0
-	subss	xmm5, xmm2		; discriminant
-	pxor	xmm1, xmm1
+	vmulps	xmm1, xmm6, xmm6
+	vmulss	xmm2, xmm7, xmm0
+	subss	xmm1, xmm2		; discriminant
+	pxor	xmm8, xmm8
 	; if discrimiant >= 0, return true
+	comiss	xmm5, xmm8
+	jb	.no_hit
+	; root = (b - sqrt(discriminant)) / a;
+	rsqrtss	xmm8, xmm1
+	mulss	xmm8, xmm1		; less clocks w/ rsqrt + mulss
+	vsubss	xmm7, xmm6, xmm8
+	vdivss	xmm1, xmm7, xmm0	; root
+	comiss	xmm1, xmm4
+	jbe	.alt_root		; root <= t_min (not in range)
 	comiss	xmm5, xmm1
-	jb	.lt_zero
-	; (b - sqrt(discriminant)) / a;
-	rsqrtss	xmm1, xmm5
-	mulss	xmm1, xmm5		; less clocks w/ rsqrt + mulss
-	subss	xmm4, xmm5
-	vdivss	xmm0, xmm4, xmm0
+	ja	.in_range		; t_max > root (in range)
+.alt_root:
+	; root = (b + sqrt(discriminant)) / a;
+	vaddss	xmm7, xmm6, xmm8
+	vdivss	xmm1, xmm7, xmm0	; root
+	comiss	xmm1, xmm4		; root <= t_min (not in range)
+	jbe	.no_hit
+	comiss	xmm5, xmm1		; t_max <= root (not in range)
+	jbe	.no_hit
+.in_range:
+	movaps	xmm0, xmm1	
 	jmp	.end
-.lt_zero:	
+.no_hit:	
 	pxor	xmm0, xmm0
 	mov 	eax, -1.0
 	pinsrd	xmm0, eax, 0
