@@ -45,21 +45,27 @@ macro hit_sphere {
 	vfmsub231ps	ymm14, ymm13, ymm13		; discriminant
 	; if discriminant < 0, create a mask of hits and no-hits
 	vpxor		ymm15, ymm15, ymm15
-	vcmpps		ymm15, ymm14, ymm15, 5		; 8 ps mask values: 0 = no hit, 1 = hit
+	vcmpps		ymm15, ymm14, ymm15, 5		; 8 ps mask values: 0 = no hit, F = hit
+	; early exit if all values are 0
+	vtestps		ymm15, ymm15
+	jz		.end_hit_sphere
 	; sqrtd = sqrt(discriminant). using reciprocal and mulps because less clocks than sqrt
-	vrsqrtps	ymm7, ymm15			; 1 / sqrt(discriminant)
-	vmulps		ymm14, ymm7, ymm15		; sqrtd
+	vrsqrtps	ymm7, ymm14			; 1 / sqrt(discriminant)
+	vmulps		ymm14, ymm14, ymm7		; sqrtd
 	; root = (b - sqrtd) / a;
 	; use our mask from the discriminant comparison to maintain 0's where there's no hit
-	vmulps		ymm13, ymm13, ymm15		; mask the current b values
-	vmulps		ymm14, ymm14, ymm15		; mask the current sqrtd values
+	vandps		ymm13, ymm13, ymm15		; mask the current b values
+	vandps		ymm14, ymm14, ymm15		; mask the current sqrtd values
 	vrcpps		ymm12, ymm12			; a = 1 / a
 	vsubps		ymm15, ymm13, ymm14		; b - sqrtd
 	vmulps		ymm15, ymm15, ymm12		; [root_1, root_2, ...]
 	; if root >= t_max, no hit
 	vshufps		ymm6, ymm6, ymm6, 0		; copy t_max to all elements
-	vcmpps		ymm12, ymm15, ymm6, 1		; 8 ps mask values: 0 = no hit, 1 = hit
-	vmulps		ymm15, ymm15, ymm12
+	vcmpps		ymm12, ymm15, ymm6, 1		; 8 ps mask values: 0 = no hit, F = hit
+	; early exit if all values are 0
+	vtestps		ymm12, ymm12
+	jz		.end_hit_sphere
+	vandps		ymm15, ymm15, ymm12		; mask roots to preserve hits and 0 the no hits
 	; hit_point = ray_orig + t(root)*ray_dir
 	vshufps		ymm12, ymm8, ymm8, 0		; copy sphere_origin.x to all elements 
 	vshufps		ymm13, ymm8, ymm8, 85		; copy sphere_origin.y to all elements
@@ -84,8 +90,11 @@ macro hit_sphere {
 	vfmadd231ps	ymm1, ymm2, ymm10		; [... + ray_dir_1.y * out_norm_1.y, ...]
 	vfmadd231ps	ymm1, ymm3, ymm11		; [... + ray_dir_1.y * out_norm_1.y, ...]
 	vpxor		ymm2, ymm2, ymm2
-	vcmpps		ymm2, ymm1, ymm2, 1		; 8 ps mask values: 0 = back face, 1 = front face
-	vaddps		ymm2, ymm2, ymm2		; 0 = back face, 2 = front face
+	vcmpps		ymm2, ymm1, ymm2, 1		; 8 ps mask values: 0 = back face, F = front face
+	mov		eax, 2.0
+	movd		xmm3, eax
+	vshufps		ymm3, ymm3, ymm3, 0		; copy 2.0 to all elements
+	vandps		ymm2, ymm2, ymm3		; 0 = back face, 2.0 = front face
 	mov		eax, 1.0
 	movd		xmm3, eax
 	vshufps		ymm3, ymm3, ymm3, 0		; copy 1.0 to all elements
@@ -93,7 +102,7 @@ macro hit_sphere {
 	vmulps		ymm9, ymm9, ymm2		; invert normal x's that hit a back face
 	vmulps		ymm10, ymm10, ymm2		; invert normal y's that hit a back face
 	vmulps		ymm11, ymm11, ymm2		; invert normal z's that hit a back face
-	; mov registers to correct output order
+	; move registers to correct output order
 	vmovaps		ymm1, ymm15			; t values
 	vmovaps		ymm2, ymm12			; hit position x's
 	vmovaps		ymm3, ymm13			; hit position y's
@@ -101,6 +110,7 @@ macro hit_sphere {
 	vmovaps		ymm5, ymm9			; normal x's
 	vmovaps		ymm6, ymm10			; normal y's
 	vmovaps		ymm7, ymm11			; normal z's
+.end_hit_sphere:
 }
 
 ; computes the point on a ray at a given time t
