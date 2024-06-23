@@ -64,7 +64,7 @@ entry $
 	subps	xmm0, xmm1
 	movaps	xmm1, xmm0		; direction
 	movups	xmm0, [cam_center]	; origin
-	call 	ray_color	
+	ray_color	
 	mov	edi, [rbp - 12]
 	call	write_color
 

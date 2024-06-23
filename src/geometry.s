@@ -47,7 +47,8 @@ macro hit_sphere {
 	vpxor		ymm15, ymm15, ymm15
 	vcmpps		ymm15, ymm14, ymm15, 5		; 8 ps mask values: 0 = no hit, F = hit
 	; early exit if all values are 0
-	vtestps		ymm15, ymm15
+	vtestps		ymm15, ymm15	
+	; since ymm15 will be moved to ymm1 at end, no need to 0 the ymm15 register
 	jz		.end_hit_sphere
 	; sqrtd = sqrt(discriminant). using reciprocal and mulps because less clocks than sqrt
 	vrsqrtps	ymm7, ymm14			; 1 / sqrt(discriminant)
@@ -63,9 +64,9 @@ macro hit_sphere {
 	vshufps		ymm6, ymm6, ymm6, 0		; copy t_max to all elements
 	vcmpps		ymm12, ymm15, ymm6, 1		; 8 ps mask values: 0 = no hit, F = hit
 	; early exit if all values are 0
-	vtestps		ymm12, ymm12
-	jz		.end_hit_sphere
 	vandps		ymm15, ymm15, ymm12		; mask roots to preserve hits and 0 the no hits
+	vtestps		ymm15, ymm15
+	jz		.end_hit_sphere
 	; hit_point = ray_orig + t(root)*ray_dir
 	vshufps		ymm12, ymm8, ymm8, 0		; copy sphere_origin.x to all elements 
 	vshufps		ymm13, ymm8, ymm8, 85		; copy sphere_origin.y to all elements
@@ -103,7 +104,6 @@ macro hit_sphere {
 	vmulps		ymm10, ymm10, ymm2		; invert normal y's that hit a back face
 	vmulps		ymm11, ymm11, ymm2		; invert normal z's that hit a back face
 	; move registers to correct output order
-	vmovaps		ymm1, ymm15			; t values
 	vmovaps		ymm2, ymm12			; hit position x's
 	vmovaps		ymm3, ymm13			; hit position y's
 	vmovaps		ymm4, ymm14			; hit position z's
@@ -111,75 +111,30 @@ macro hit_sphere {
 	vmovaps		ymm6, ymm10			; normal y's
 	vmovaps		ymm7, ymm11			; normal z's
 .end_hit_sphere:
+	vmovaps		ymm1, ymm15			; t values
 }
 
-; computes the point on a ray at a given time t
-; P(t) = A + tb
 ; inputs:
-; 	xmm0: ray starting point
-;	xmm1: ray dir. should be normalized 
-;	xmm2: t(ime) float in lowest dword
+;	ymm1: t values for all rays. 0 where there is no hit
+;	ymm2: hit position x values
+;	ymm3: hit position y values
+;	ymm4: hit position z values
+;	ymm5: normal x values
+;	ymm6: normal y values
+;	ymm7: normal z values
 ; outputs:
-;	xmm0: vec representing position at t along ray
-; mangles:
-;	xmm0-2
-ray_at:
-	vec_muls	xmm1, xmm2
-	addps	xmm0, xmm1
-	ret
-
-; computes the color of a ray
-; blended_value = (1 - a) * startValue + a * endValue
-; inputs:
-;	xmm0: ray starting point
-;	xmm1: ray dir
-; outputs:
-;	xmm0: ray color (r, g, b, 0)
-; mangles:
-;	eax, xmm0-13
-ray_color:
-	movaps	xmm12, xmm0		
-	movaps	xmm13, xmm1	
-	movups	xmm2, [sphere.orig]
-	movss	xmm3, [sphere.rad]
-	hit_sphere
-	mov	eax, 0.0
-	pinsrd	xmm1, eax, 0
-	comiss	xmm0, xmm1
-	jbe	.no_sphere_hit
-	; N = unit_vector(r.at(t) - vec3(0,0,-1));
-	movaps	xmm2, xmm0		; move t
-	movaps	xmm0, xmm12				; restore ray origin
-	movaps	xmm1, xmm13				; restore ray dir
-	call	ray_at
-	movups	xmm2, [sphere.orig]
-	subps	xmm0, xmm2
-	call	vec_norm		; xmm0 <=> N
-	; return 0.5*color(N.x()+1, N.y()+1, N.z()+1);
-	mov	eax, 1.0
-	pinsrd	xmm1, eax, 0
-	vec_adds	xmm0, xmm1
-	mov	eax, 0.5
-	pinsrd	xmm1, eax, 0	
-	vec_muls	xmm0, xmm1
-	ret
-.no_sphere_hit:
-	movaps	xmm0, xmm13
-	call vec_norm
-	shufps	xmm0, xmm0, 11010101b	; copy y to all channels. sky blends in y dir 
-	mov	eax, 1.0
-	pinsrd	xmm1, eax, 0
-	addss	xmm0, xmm1		; unit_dir.y + 1.0
-	mov	eax, 0.5
-	pinsrd	xmm1, eax, 0
-	mulss	xmm0, xmm1		; a = 5.0(unit_dir.y + 1.0)
-	movups	xmm1, [sky_blue]
-	vec_muls	xmm1, xmm0
-	movups	xmm2, [white]
-	mov	eax, 1.0
-	pinsrd	xmm3, eax, 0
-	subss	xmm3, xmm0		; 1.0 - a
-	vec_muls	xmm2, xmm3
-	vaddps	xmm0, xmm1, xmm2
-	ret
-
+;	ymm1: 8 red color values
+;	ymm2: 8 green color values
+;	ymm3: 8 red color values
+macro ray_color {
+	vpxor		ymm9, ymm9, ymm9
+	vcmpps		ymm9, ymm1, ymm9, 5		; F = hit, 0 = no hit
+	mov		eax, 1.0
+	movd		xmm10, eax
+	vshufps		ymm10, ymm10, ymm10, 0
+	vandps		ymm10, ymm10, ymm9
+	vaddps		ymm9, ymm9, ymm10	
+	vmovaps		ymm1, ymm9
+	vpxor		ymm2, ymm2, ymm2
+	vpxor		ymm3, ymm3, ymm3
+}
